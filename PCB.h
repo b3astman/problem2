@@ -1,3 +1,4 @@
+#pragma once
 
 enum state_type {new, ready, running, interrupted, waiting, halted};
 
