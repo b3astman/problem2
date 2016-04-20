@@ -12,7 +12,6 @@ PCB_Queue_p readyQueue;
 PCB_p currentPCB;
 PCB_p idl;
 
-int contextSwitchCount = 0;
 enum PCB_ERROR error = PCB_SUCCESS;
 
 void dispatcher() {
@@ -22,25 +21,28 @@ void dispatcher() {
 		currentPCB = idl;
 	}
 
-	printf("Switching to:\t\t");
+	printf("Switching to:\t");
 	PCB_print(currentPCB, &error);
 
 	PCB_set_state(currentPCB, PCB_STATE_RUNNING, &error);
 	sysStack = PCB_get_pc(currentPCB, &error);
-	contextSwitchCount++;
 }
 
 void scheduler(int interruptType) {
 	while (!PCB_Queue_is_empty(createdQueue, &error)) {
 		PCB_p p = PCB_Queue_dequeue(createdQueue, &error);
 		PCB_set_state(p, PCB_STATE_READY, &error);
+
+		printf("Scheduled:\t");
+		PCB_print(p, &error);
+
 		PCB_Queue_enqueue(readyQueue, p, &error);
 	}
 	if (interruptType == 1) {
 		PCB_set_state(currentPCB, PCB_STATE_READY, &error);
 		if (PCB_get_pid(currentPCB, &error) != IDL_PID) {
 
-			printf("Returned to ready queue:");
+			printf("Returned:\t");
 			PCB_print(currentPCB, &error);
 
 			PCB_Queue_enqueue(readyQueue, currentPCB, &error);
@@ -72,17 +74,18 @@ int main() {
 			PCB_init(p, &error);
 			PCB_set_pid(p, (i << 4) + j, &error);
 			PCB_Queue_enqueue(createdQueue, p, &error);
-			printf("Added to ready queue:\t");
+			printf("Created:\t");
 			PCB_print(p, &error);
 		}
 		if (PCB_get_pid(currentPCB, &error) != IDL_PID) {
 			sysStack += rand() % 1001 + 3000;
 		}
 		
-		printf("Switching from:\t\t");
+		printf("Switching from:\t");
 		PCB_print(currentPCB, &error);
-		
+
 		isrTimer();
+		PCB_Queue_print(readyQueue, &error);
 	}
 
 	printf("\n\n%u", error);
